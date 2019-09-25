@@ -7,6 +7,10 @@ module.exports = {
 	_isShowingInterstitialAd: false,
 	_isShowingRewardedVideoAd: false,	
 	_fixCocoonIOCordovaAndroidAdMobIssue: false,
+	_reward: false,
+	_rewardErrorCode: false,
+	_bannerErrorCode: false,
+	_interstitialErrorCode: false,
 	//
 	setLicenseKey: function(email, licenseKey) {
 		var self = this;	
@@ -18,7 +22,8 @@ module.exports = {
             [email, licenseKey]
         ); 
     },
-	setUp: function(bannerAdUnit, interstitialAdUnit, rewardedVideoAdUnit, isOverlap, isTest) {
+	//setUp: function(bannerAdUnit, interstitialAdUnit, rewardedVideoAdUnit, isOverlap, isTest) {
+	setUp: function(bannerAdUnit, interstitialAdUnit, rewardedVideoAdUnit, isOverlap, isTest, appID) {
         if (typeof isTest == 'undefined') {
             //isOverlap=rewardedVideoAdUnit;
             //isTest=isOverlap;
@@ -33,8 +38,30 @@ module.exports = {
 		var self = this;
         cordova.exec(
             function (result) {
+
+                //Now returns an object for onReward
+                var resObject;
+				
+                if (typeof result == "object") {
+                    resObject = result;
+                    result = resObject.result;
+                }
+                    
 				if (typeof result == "string") {
-					if (result == "onBannerAdPreloaded") {					
+					
+					//bug 533 
+					if (result == "onBannerAdFailedToLoad"){
+						self._bannerErrorCode = resObject;
+						if (self.onBannerAdFailedToLoad)
+					        self.onBannerAdFailedToLoad();
+					}
+					else if (result == "onInterstitialAdFailedToLoad"){
+						self._interstitialErrorCode = resObject;
+						if (self.onInterstitialAdFailedToLoad)
+					        self.onInterstitialAdFailedToLoad();
+					}
+					
+					else if (result == "onBannerAdPreloaded") {					
 						if (self.onBannerAdPreloaded)
 							self.onBannerAdPreloaded();
 					}
@@ -62,6 +89,19 @@ if (typeof Cocoon != 'undefined' && navigator.userAgent.match(/Android/i) && !se
 					
 						 if (self.onBannerAdHidden)
 							self.onBannerAdHidden();
+					}
+					else if (result == "onBannerAdDestroyed") {
+						self._isShowingBannerAd = false;
+					
+						 if (self.onBannerAdDestroyed)
+							self.onBannerAdDestroyed();
+					}
+					
+					else if (result == "onBannerAdUnhidden") {
+						self._isShowingBannerAd = true;
+					
+						 if (self.onBannerAdUnhidden)
+							self.onBannerAdUnhidden();
 					}
 					//
 					else if (result == "onInterstitialAdPreloaded") {
@@ -105,7 +145,7 @@ if (typeof Cocoon != 'undefined' && navigator.userAgent.match(/Android/i) && !se
 						 if (self.onInterstitialAdHidden)
 							self.onInterstitialAdHidden();
 					}
-					//
+					    // 
 					else if (result == "onRewardedVideoAdPreloaded") {
 						if (self.onRewardedVideoAdPreloaded)
 							self.onRewardedVideoAdPreloaded();
@@ -130,9 +170,18 @@ if (typeof Cocoon != 'undefined' && navigator.userAgent.match(/Android/i) && !se
 							self.onRewardedVideoAdHidden();
 					}
 					else if (result == "onRewardedVideoAdCompleted") {
-						if (self.onRewardedVideoAdCompleted)
-							self.onRewardedVideoAdCompleted();
-					}					
+						self._reward = resObject;
+					    if (self.onRewardedVideoAdCompleted)
+					        self.onRewardedVideoAdCompleted();							
+					}
+					else if (result == "onRewardedVideoAdFailedToLoad"){
+						self._rewardErrorCode = resObject;
+						if (self.onRewardedVideoAdFailedToLoad)
+					        self.onRewardedVideoAdFailedToLoad();
+					}
+					else if (result == "getSmartBannerHeight"){
+						self._smartBannerHeight = resObject;
+					}
 				}
 				else {
 					//var event = result["event"];
@@ -144,10 +193,12 @@ if (typeof Cocoon != 'undefined' && navigator.userAgent.match(/Android/i) && !se
 				}			
 			}, 
 			function (error) {
+				console.log("error callback triggered");
+				console.log(error);
 			},
             'AdMobPlugin',
             'setUp',			
-            [bannerAdUnit, interstitialAdUnit, rewardedVideoAdUnit, isOverlap, isTest]
+            [bannerAdUnit, interstitialAdUnit, rewardedVideoAdUnit, isOverlap, isTest, appID]
         ); 
     },
 	preloadBannerAd: function() {
@@ -160,14 +211,15 @@ if (typeof Cocoon != 'undefined' && navigator.userAgent.match(/Android/i) && !se
             []
         ); 
     },
-    showBannerAd: function(position, size) {
+	//798 isDummy added
+    showBannerAd: function(position, size, isDummy) {
 		var self = this;	
         cordova.exec(
             null,
             null,
             'AdMobPlugin',
             'showBannerAd',
-            [position, size]
+            [position, size, isDummy]
         ); 
     },
 	reloadBannerAd: function() {
@@ -187,6 +239,16 @@ if (typeof Cocoon != 'undefined' && navigator.userAgent.match(/Android/i) && !se
             null,
             'AdMobPlugin',
             'hideBannerAd',
+            []
+        ); 
+    },
+	destroyBannerAd: function() {
+		var self = this;
+        cordova.exec(
+            null,
+            null,
+            'AdMobPlugin',
+            'destroyBannerAd',
             []
         ); 
     },
@@ -251,7 +313,17 @@ if (typeof Cocoon != 'undefined' && navigator.userAgent.match(/Android/i) && !se
             'showRewardedVideoAd',
             []
         ); 
-    },	
+    },
+	unhideBannerAd: function() {
+		var self = this;
+        cordova.exec(
+            null,
+            null,
+            'AdMobPlugin',
+            'unhideBannerAd',
+            []
+        ); 
+    },
 	loadedBannerAd: function() {
 		return this._loadedBannerAd;
 	},
@@ -280,10 +352,34 @@ if (typeof Cocoon != 'undefined' && navigator.userAgent.match(/Android/i) && !se
 	isShowingRewardedVideoAd: function() {
 		return this._isShowingRewardedVideoAd;
 	},	
+	getRewardInfo: function(){
+		return this._reward;
+	},
+	getRewardErrorCode: function(){
+		return this._rewardErrorCode;
+	},
+	getBannerErrorCode: function(){
+		return this._bannerErrorCode;
+	},
+	getInterstitialErrorCode: function(){
+		return this._interstitialErrorCode;
+	},
+	getSmartBannerHeight: function(){		
+		var self = this;
+		if (typeof self._smartBannerHeight !='undefined'){
+		  return self._smartBannerHeight.smartBannerHeight;			
+		}else{
+		  return -1;
+		}
+	},
+
 	onBannerAdPreloaded: null,
 	onBannerAdLoaded: null,
 	onBannerAdShown: null,
-	onBannerAdHidden: null,	
+	onBannerAdHidden: null,
+	onBannerAdDestroyed: null,
+	onBannerAdUnhidden: null,
+	onBannerAdFailedToLoad: null,
 	//
 //cranberrygame start; deprecated	
 	onFullScreenAdPreloaded: null,
@@ -296,10 +392,12 @@ if (typeof Cocoon != 'undefined' && navigator.userAgent.match(/Android/i) && !se
 	onInterstitialAdLoaded: null,
 	onInterstitialAdShown: null,
 	onInterstitialAdHidden: null,
+	onInterstitialAdFailedToLoad: null,
 	//
 	onRewardedVideoAdPreloaded: null,
 	onRewardedVideoAdLoaded: null,
 	onRewardedVideoAdShown: null,
 	onRewardedVideoAdHidden: null,
-	onRewardedVideoAdCompleted: null
+	onRewardedVideoAdCompleted: null,
+	onRewardedVideoAdFailedToLoad:null
 };

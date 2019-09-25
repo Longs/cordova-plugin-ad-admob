@@ -42,6 +42,24 @@ You can see Cordova Plugins in one page: http://cranberrygame.github.io?referrer
 
 # Change log #
 ```c
+2019.9.25
+	ANDROID CHANGES:
+	Add PR #27 & #30
+	Add MobileAds.initialize()
+	Improved error logging: 
+ 		getRewardErrorCode():
+ 		getBannerErrorCode():
+ 		getInterstitialErrorCode():
+	Add getRewardInfo():
+		window.admob.getRewardInfo());
+	Add getSmartBannerHeight():
+	remap hideBannerAd() to hide rather than destroy
+	unhideBannerAd() added
+	destroyBannerAd() added
+
+
+
+
 2014.9.17
 	supports SKYSCRAPER size (120x600, Tablets, ipad only)
 	Added additional example (example/banner_position_size/index.html)

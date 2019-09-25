@@ -85,7 +85,7 @@ public class AdMobSplit extends AdMobOverlap {
 								handler.postDelayed(new Runnable() {
 									@Override
 									public void run() {
-										_showBannerAd(bannerPreviousPosition, bannerPreviousSize);
+										_showBannerAd(bannerPreviousPosition, bannerPreviousSize, false);//798 false added
 									}
 								}, 1);//after 1ms				
 							}
