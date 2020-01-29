@@ -52,7 +52,8 @@ interface PluginDelegate {
 	public void _showRewardedVideoAd();	
     public void onPause(boolean multitasking);
     public void onResume(boolean multitasking);
-    public void onDestroy();
+	public void onDestroy();
+	public void _setConsentExtras(JSONArray extrasJSON);
 }
 
 public class AdMobPlugin extends CordovaPlugin implements PluginDelegate, Plugin {
@@ -98,11 +99,6 @@ public class AdMobPlugin extends CordovaPlugin implements PluginDelegate, Plugin
         pluginDelegate.onResume(multitasking);
     }
   	
-	//@Override
-	//public void onStop() {//build error
-	//	super.onStop();
-	//	//
-	//}
 	
     @Override
     public void onDestroy() {
@@ -171,6 +167,10 @@ public class AdMobPlugin extends CordovaPlugin implements PluginDelegate, Plugin
 		else if (action.equals("showRewardedVideoAd")) {
 			showRewardedVideoAd(action, args, callbackContext);
 						
+			return true;
+		}
+		else if (action.equals("setConsentExtras")) {
+			setConsentExtras(action, args, callbackContext);					
 			return true;
 		}		
 						
@@ -247,7 +247,7 @@ public class AdMobPlugin extends CordovaPlugin implements PluginDelegate, Plugin
 		});
 	}
 	
-	private void preloadBannerAd(String action, JSONArray args, CallbackContext callbackContext) throws JSONException {
+	private void preloadBannerAd(String action, JSONArray args, CallbackContext callbackContext) throws JSONException {		
 		cordova.getActivity().runOnUiThread(new Runnable(){
 			@Override
 			public void run() {
@@ -340,6 +340,15 @@ public class AdMobPlugin extends CordovaPlugin implements PluginDelegate, Plugin
 			@Override
 			public void run() {
 				_showRewardedVideoAd();
+			}
+		});
+	}
+
+	private void setConsentExtras(String action, JSONArray args, CallbackContext callbackContext) throws JSONException {
+		cordova.getActivity().runOnUiThread(new Runnable(){
+			@Override
+			public void run() {
+				_setConsentExtras(args);
 			}
 		});
 	}
@@ -449,6 +458,9 @@ public class AdMobPlugin extends CordovaPlugin implements PluginDelegate, Plugin
 		pluginDelegate._showRewardedVideoAd();
 	}	
 
-	//cranberrygame end: AdMobPluginDelegate
+	public void _setConsentExtras(JSONArray args){
+		pluginDelegate._setConsentExtras(args);
+	}
+
 }
 

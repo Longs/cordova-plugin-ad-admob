@@ -42,6 +42,15 @@ You can see Cordova Plugins in one page: http://cranberrygame.github.io?referrer
 
 # Change log #
 ```c
+2020.1.20
+	ANDROID CHANGES:
+	Add ability to set networkExtrasBundle related to consent
+	as per https://developers.google.com/admob/android/ccpa
+		setConsentExtras(JSON);
+		for example: 
+			setConsentExtras({"rdp": 1 }); for CCPA compliance,
+			setConsentExtras({"npa": "1" }); for non-personalized GDPR
+
 2019.9.25
 	ANDROID CHANGES:
 	Add PR #27 & #30

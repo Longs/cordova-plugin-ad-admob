@@ -202,7 +202,7 @@ if (typeof Cocoon != 'undefined' && navigator.userAgent.match(/Android/i) && !se
         ); 
     },
 	preloadBannerAd: function() {
-		var self = this;	
+		var self = this;
         cordova.exec(
             null,
             null,
@@ -211,9 +211,8 @@ if (typeof Cocoon != 'undefined' && navigator.userAgent.match(/Android/i) && !se
             []
         ); 
     },
-	//798 isDummy added
     showBannerAd: function(position, size, isDummy) {
-		var self = this;	
+		var self = this;
         cordova.exec(
             null,
             null,
@@ -223,7 +222,7 @@ if (typeof Cocoon != 'undefined' && navigator.userAgent.match(/Android/i) && !se
         ); 
     },
 	reloadBannerAd: function() {
-		var self = this;	
+		var self = this;
         cordova.exec(
             null,
             null,
@@ -371,6 +370,16 @@ if (typeof Cocoon != 'undefined' && navigator.userAgent.match(/Android/i) && !se
 		}else{
 		  return -1;
 		}
+	},
+	setConsentExtras: function(extrasJSON){
+		var self = this;
+		cordova.exec(
+            null,
+            null,
+            'AdMobPlugin',
+            'setConsentExtras',
+            [extrasJSON]
+        );
 	},
 
 	onBannerAdPreloaded: null,

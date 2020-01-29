@@ -24,11 +24,13 @@ import com.google.android.gms.ads.MobileAds;
 import com.google.android.gms.ads.reward.RewardedVideoAd;
 import com.google.android.gms.ads.reward.RewardedVideoAdListener;
 import com.google.android.gms.ads.reward.RewardItem;
+import com.google.ads.mediation.admob.AdMobAdapter;
 
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.RelativeLayout;
 import android.os.Build;
+import android.os.Bundle;
 import android.provider.Settings;
 
 import android.os.Handler;
@@ -45,6 +47,7 @@ import android.content.Context;
 import android.annotation.TargetApi;
 //
 import java.lang.reflect.Method;
+import java.lang.Boolean;
 
 class Util {
 
@@ -119,6 +122,10 @@ public class AdMobOverlap implements PluginDelegate {
 	protected InterstitialAd interstitial;
 	protected RewardedVideoAd rewardedVideo;
 	protected int _smartBannerHeight;
+	//consentRelated
+	protected boolean isNPA; //non personalised for GDPR consent
+	protected boolean isRDP; // restricted data processing for CCPA
+	protected JSONObject extrasJSON;
 	
 	public AdMobOverlap(Plugin plugin_) {
 		plugin = plugin_;
@@ -126,13 +133,73 @@ public class AdMobOverlap implements PluginDelegate {
 
 	public void _setLicenseKey(String email, String licenseKey) {
 	}
+
+	public void _setConsentExtras(JSONArray extrasJSON){
+
+		//temp test:
+		if (this.extrasJSON == null){
+			Log.d(LOG_TAG, "extrasJSON is null before setting");
+		}
+
+		try{
+			JSONObject obj = extrasJSON.getJSONObject(0);
+			String s1 = obj.toString();
+			Log.d(LOG_TAG, "in _sCE");
+			Log.d(LOG_TAG, s1);
+			this.extrasJSON = obj;
+
+		} catch (JSONException e){
+			Log.e(LOG_TAG, "JSON exception setting consent extras:");
+			Log.e(LOG_TAG, e.getMessage());
+		}
+
+	}
+
+	private Bundle _bundleConsentExtras(JSONObject args){
+		Bundle out = new Bundle();
+
+		//temp test
+		if (out.isEmpty()){
+			Log.d(LOG_TAG," bundle IS empty before setting");
+		}
+
+				String s1 = args.names().length() +"";
+		Log.d(LOG_TAG, "consent extras size is: " + s1 );
+		for (int i=0; i<args.names().length(); i++){
+			try{
+				String sName = args.names().getString(i);
+				Object o = args.get(sName);
+				if (o instanceof Integer){
+					Log.d(LOG_TAG, sName + " is Integer");
+					out.putInt(sName,(Integer)o);
+				}else if (o instanceof String){
+					Log.d(LOG_TAG, sName + " is String");
+					out.putString(sName,(String)o);
+				}else{
+					Log.d(LOG_TAG, "unhandled type detected in consent JSON");
+				}
+			}catch (JSONException e){
+				Log.d(LOG_TAG, "JSON exception in _bCE");
+				Log.d(LOG_TAG, e.getMessage());
+			}
+		}
+		String s2 = out.toString();
+		if (isTest){
+			Log.d(LOG_TAG, " bundle contents: " + s2);
+		}
+
+		if (!out.isEmpty()){
+			Log.d(LOG_TAG," bundle is NOT empty after setting");
+		}
+		return out;
+	}
 	
 	public void _setUp(String bannerAdUnit, String interstitialAdUnit, String rewardedVideoAdUnit, boolean isOverlap, boolean isTest, String appID) {
 		this.bannerAdUnit = bannerAdUnit;
 		this.interstitialAdUnit = interstitialAdUnit;
 		this.rewardedVideoAdUnit = rewardedVideoAdUnit;		
 		this.isOverlap = isOverlap;
-		this.isTest = isTest;			
+		this.isTest = isTest;	
 		
 		if (isTest){
 			Log.d(LOG_TAG, "b,i,r,overlap,test,appID");
@@ -318,6 +385,14 @@ public class AdMobOverlap implements PluginDelegate {
 				String deviceId = Util.md5(ANDROID_ID).toUpperCase();
 				builder.addTestDevice(deviceId);		
 			}
+			if (this.extrasJSON != null && this.extrasJSON.length() > 0){
+				Bundle extras = _bundleConsentExtras(this.extrasJSON);
+				builder.addNetworkExtrasBundle(AdMobAdapter.class,extras);
+			}else{
+				if (isTest){
+					Log.d(LOG_TAG,"No consent extras found");
+				}
+			}
 			AdRequest request = builder.build();
 			bannerView.loadAd(request);
 		}
@@ -328,7 +403,7 @@ public class AdMobOverlap implements PluginDelegate {
 		if (bannerIsShowingOverlap() && position.equals(bannerPreviousPosition) && size.equals(bannerPreviousSize)) {		
 			return;
 		}
-		
+
 		this.bannerPreviousPosition = position;	
 		this.bannerPreviousSize = size;
 
@@ -499,8 +574,17 @@ public class AdMobOverlap implements PluginDelegate {
 			//builder.addTestDevice("INSERT_YOUR_HASHED_DEVICE_ID_HERE");				
 			String ANDROID_ID = Settings.Secure.getString(plugin.getCordova().getActivity().getContentResolver(), android.provider.Settings.Secure.ANDROID_ID);
 			String deviceId = Util.md5(ANDROID_ID).toUpperCase();
-			builder.addTestDevice(deviceId);		
+			builder.addTestDevice(deviceId);
 		}
+		if (this.extrasJSON != null && this.extrasJSON.length() > 0){
+			Bundle extras = _bundleConsentExtras(this.extrasJSON);
+			builder.addNetworkExtrasBundle(AdMobAdapter.class,extras);
+		}else{
+			if (isTest){
+				Log.d(LOG_TAG,"No consent extras found");
+			}
+		}
+
 		AdRequest request = builder.build();			
 		interstitial.loadAd(request);		
 	}
@@ -538,6 +622,14 @@ public class AdMobOverlap implements PluginDelegate {
 			String ANDROID_ID = Settings.Secure.getString(plugin.getCordova().getActivity().getContentResolver(), android.provider.Settings.Secure.ANDROID_ID);
 			String deviceId = Util.md5(ANDROID_ID).toUpperCase();
 			builder.addTestDevice(deviceId);		
+		}
+		if (this.extrasJSON != null && this.extrasJSON.length() > 0){
+			Bundle extras = _bundleConsentExtras(this.extrasJSON);
+			builder.addNetworkExtrasBundle(AdMobAdapter.class,extras);
+		}else{
+			if (isTest){
+				Log.d(LOG_TAG,"No consent extras found");
+			}
 		}
 		AdRequest request = builder.build();			
 		rewardedVideo.loadAd(this.rewardedVideoAdUnit, request);		
